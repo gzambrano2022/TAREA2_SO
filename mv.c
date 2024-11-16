@@ -237,9 +237,9 @@ int main(int argc, char* argv[]) {
         pageFaults = FIFO(frames, numFrames, pages, numPages);
     } else if (strcmp(algorithm, "LRU") == 0) {
         pageFaults = LRU(frames, numFrames, pages, numPages);
-    } else if (strcmp(algorithm, "Clock") == 0) {
+    } else if (strcmp(algorithm, "CLOCK") == 0) {
         pageFaults = Clock(frames, numFrames, pages, numPages);
-    } else if (strcmp(algorithm, "Optimal") == 0) {
+    } else if (strcmp(algorithm, "OPTIMO") == 0) {
         pageFaults = optimal(frames, numFrames, pages, numPages);
     } else {
         printf("Algoritmo no soportado\n");
