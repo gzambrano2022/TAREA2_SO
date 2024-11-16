@@ -78,6 +78,132 @@ int FIFO(int frames[], int numFrames, int pages[], int numPages) {
     return pageFaults;
 }
 
+int LRU(int frames[], int numFrames, int pages[], int numPages) {
+    int pageFaults = 0;
+    int time[MAX_FRAMES];
+    int timeCounter = 0;
+
+    for (int i = 0; i < numFrames; i++) {
+        frames[i] = -1;
+        time[i] = 0;
+    }
+
+    for (int i = 0; i < numPages; i++) {
+        int found = 0;
+        for (int j = 0; j < numFrames; j++) {
+            if (frames[j] == pages[i]) {
+                found = 1;
+                time[j] = timeCounter++;
+                break;
+            }
+        }
+
+        if (!found) {
+            int lruIndex = 0;
+            for (int j = 1; j < numFrames; j++) {
+                if (frames[j] == -1 || time[j] < time[lruIndex]) {
+                    lruIndex = j;
+                }
+            }
+            frames[lruIndex] = pages[i];
+            time[lruIndex] = timeCounter++;
+            pageFaults++;
+        }
+    }
+
+    return pageFaults;
+}
+
+typedef struct {
+    int pageNumber;
+    int useBit;
+} ClockPage;
+
+int Clock(int frames[], int numFrames, int pages[], int numPages) {
+    ClockPage clock[MAX_FRAMES];
+    int clockHand = 0;
+    int pageFaults = 0;
+
+    for (int i = 0; i < numFrames; i++) {
+        clock[i].pageNumber = -1;
+        clock[i].useBit = 0;
+    }
+
+    for (int i = 0; i < numPages; i++) {
+        int found = 0;
+        for (int j = 0; j < numFrames; j++) {
+            if (clock[j].pageNumber == pages[i]) {
+                clock[j].useBit = 1;
+                found = 1;
+                break;
+            }
+        }
+
+        if (!found) {
+            while (clock[clockHand].useBit == 1) {
+                clock[clockHand].useBit = 0;
+                clockHand = (clockHand + 1) % numFrames;
+            }
+            clock[clockHand].pageNumber = pages[i];
+            clock[clockHand].useBit = 1;
+            clockHand = (clockHand + 1) % numFrames;
+            pageFaults++;
+        }
+    }
+
+    return pageFaults;
+}
+
+int optimal(int frames[], int numFrames, int pages[], int numPages) {
+    int pageFaults = 0;
+
+    for (int i = 0; i < numPages; i++) {
+        int found = 0;
+        for (int j = 0; j < numFrames; j++) {
+            if (frames[j] == pages[i]) {
+                found = 1;
+                break;
+            }
+        }
+
+        if (!found) {
+            int indexToReplace = -1;
+            int farthest = i + 1;
+
+            for (int j = 0; j < numFrames; j++) {
+                int k;
+                for (k = i + 1; k < numPages; k++) {
+                    if (frames[j] == pages[k]) {
+                        if (k > farthest) {
+                            farthest = k;
+                            indexToReplace = j;
+                        }
+                        break;
+                    }
+                }
+                if (k == numPages) {
+                    indexToReplace = j;
+                    break;
+                }
+            }
+
+            if (indexToReplace == -1) {
+                for (int j = 0; j < numFrames; j++) {
+                    if (frames[j] == -1) {
+                        indexToReplace = j;
+                        break;
+                    }
+                }
+            }
+
+            frames[indexToReplace] = pages[i];
+            pageFaults++;
+        }
+    }
+
+    return pageFaults;
+}
+
 int main(int argc, char* argv[]) {
     if (argc != 7) {
         printf("Uso: %s -m <num_marcos> -a <algoritmo> -f <archivo_referencias>\n", argv[0]);
@@ -109,6 +235,12 @@ int main(int argc, char* argv[]) {
     int pageFaults = 0;
     if (strcmp(algorithm, "FIFO") == 0) {
         pageFaults = FIFO(frames, numFrames, pages, numPages);
+    } else if (strcmp(algorithm, "LRU") == 0) {
+        pageFaults = LRU(frames, numFrames, pages, numPages);
+    } else if (strcmp(algorithm, "Clock") == 0) {
+        pageFaults = Clock(frames, numFrames, pages, numPages);
+    } else if (strcmp(algorithm, "Optimal") == 0) {
+        pageFaults = optimal(frames, numFrames, pages, numPages);
     } else {
         printf("Algoritmo no soportado\n");
         return 1;
