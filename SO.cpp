@@ -16,10 +16,24 @@ private:
     size_t head, tail, size, capacity;
     std::mutex mtx;
     std::condition_variable not_full, not_empty;
+    std::ofstream log_file; 
+    std::chrono::steady_clock::time_point start_time;
 
 public:
     CircularQueue(size_t initial_capacity) 
-        : head(0), tail(0), size(0), capacity(initial_capacity), queue(initial_capacity) {}
+        : head(0), tail(0), size(0), capacity(initial_capacity), queue(initial_capacity) {
+            log_file.open("capacity.log");
+            if (!log_file.is_open()) {
+                std::cerr << "Error al abrir el archivo capacity.log" << std::endl;
+            }
+            start_time = std::chrono::steady_clock::now();
+        }
+
+    ~CircularQueue() { 
+        if (log_file.is_open()) {
+            log_file.close();
+        }
+    }
 
     void enqueue(int item) {
         std::unique_lock<std::mutex> lock(mtx);
@@ -33,6 +47,7 @@ public:
             doubleCapacity();
         }
 
+        logCapacity(); // Registrar capacidad después de encolar
         not_empty.notify_one();
     }
 
@@ -48,6 +63,7 @@ public:
             halveCapacity();
         }
 
+        logCapacity(); // Registrar capacidad después de desencolar
         not_full.notify_one();
         return item;
     }
@@ -68,6 +84,7 @@ private:
         head = 0;
         tail = size;
         capacity *= 2;
+        logCapacity(); // Registrar capacidad después de duplicarla
     }
 
     void halveCapacity() {
@@ -80,6 +97,16 @@ private:
         head = 0;
         tail = size;
         capacity /= 2;
+        logCapacity(); // Registrar capacidad después de reducirla
+    }
+    void logCapacity() { 
+        auto now = std::chrono::steady_clock::now(); 
+        auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - start_time).count(); 
+        if (log_file.is_open()) {
+            log_file << elapsed << " " << capacity << "\n"; 
+        } else {
+            std::cerr << "Error: el archivo capacity.log no está abierto." << std::endl;
+        }
     }
 };
 
@@ -88,7 +115,7 @@ std::ofstream log_file;
 std::mutex log_mtx;
 
 void producer(CircularQueue& queue, std::atomic<bool>& done_producing, int id, std::uniform_int_distribution<int>& dist, std::default_random_engine& gen) {
-    for (int i = 0; i < 36; i++) { // Número arbitrario de producciones.
+    for (int i = 0; i < 200; i++) { // Número arbitrario de producciones.
         int item = dist(gen);
         queue.enqueue(item);
 
