@@ -90,6 +90,7 @@ private:
     void halveCapacity() {
         if (capacity / 2 < 1) return; // No reducir más si la capacidad es 1.
         std::vector<int> new_queue(capacity / 2);
+        std::cout << "Dividiendo a la mitad la capacidad de la cola." << std::endl; 
         for (size_t i = 0; i < size; i++) {
             new_queue[i] = queue[(head + i) % capacity];
         }
@@ -99,6 +100,7 @@ private:
         capacity /= 2;
         logCapacity(); // Registrar capacidad después de reducirla
     }
+    
     void logCapacity() { 
         auto now = std::chrono::steady_clock::now(); 
         auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - start_time).count(); 
